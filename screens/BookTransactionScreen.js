@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View, TouchableOpacity, TextInput, Image, StyleSheet, Alert } from 'react-native';
+import { Text, View, TouchableOpacity, TextInput, Image, StyleSheet, Alert,KeyboardAvoidingView , ToastAndroid} from 'react-native';
 import * as Permissions from 'expo-permissions';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import * as firebase from 'firebase';
@@ -35,6 +35,7 @@ export default class TransactionScreen extends React.Component {
         db.collection('books').doc(this.state.scannedBookId).get()
         .then((doc)=>{
             var book = doc.data()
+            console.log(book)
             if(book.Book_Availablity){
                 this.initiateBookIssue()
                 transctionMessage='Book Issued'
@@ -48,19 +49,24 @@ export default class TransactionScreen extends React.Component {
     }
 
     initiateBookIssue = async()=>{
+      console.log("initiateBookIssue")
         db.collection('transctions').add({
             Student_ID: this.state.scannedStudentId,
             Book_ID: this.state.scannedBookId,
             Date:firebase.firestore.Timestamp.now().toDate(),
             transctionType: 'Issued'
         })
+        console.log("txn done")
         db.collection('books').doc(this.state.scannedBookId).update({
             Book_Availablity:false
         })
+        console.log("book done")
         db.collection('Students').doc(this.state.scannedStudentId).update({
             Numbers_of_books_issued:firebase.firestore.FieldValue.increment(1)
         })
+        console.log("book done")
         Alert.alert('Book Issued')
+        //ToastAndroid.show('Book Issued',ToastAndroid.SHORT)
         this.setState({scannedBookId:'',scannedStudentId:''})
     }
 
@@ -78,6 +84,7 @@ export default class TransactionScreen extends React.Component {
             Numbers_of_books_issued:firebase.firestore.FieldValue.increment(-1)
         })
         Alert.alert('Book Returned')
+       //ToastAndroid.show('Book Returned',ToastAndroid.SHORT)
         this.setState({scannedBookId:'',scannedStudentId:''})
     }
 
@@ -117,7 +124,7 @@ export default class TransactionScreen extends React.Component {
 
       else if (buttonState === "normal"){
         return(
-          <View style={styles.container}>
+          <KeyboardAvoidingView style={styles.container} behavior='padding' enabled>
             <View>
               <Image
                 source={require("../assets/booklogo.jpg")}
@@ -128,6 +135,9 @@ export default class TransactionScreen extends React.Component {
             <TextInput 
               style={styles.inputBox}
               placeholder="Book Id"
+              onChangeText={(text)=>{this.setState({
+                scannedBookId:text
+              })}}
               value={this.state.scannedBookId}/>
             <TouchableOpacity 
               style={styles.scanButton}
@@ -141,6 +151,9 @@ export default class TransactionScreen extends React.Component {
             <TextInput 
               style={styles.inputBox}
               placeholder="Student Id"
+              onChangeText={(text)=>{this.setState({
+                scannedStudentId:text
+              })}}
               value={this.state.scannedStudentId}/>
             <TouchableOpacity 
               style={styles.scanButton}
@@ -151,12 +164,15 @@ export default class TransactionScreen extends React.Component {
             </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.sumbitButton} 
-            onPress={this.handelTransction}> 
-            <Text>
-                Sumbit
-                </Text>
+            onPress={async()=>{
+              var transctionMessage = this.handelTransction();
+              this.setState(
+                {scannedBookId:'',
+                 scannedStudentId:''})
+            }}> 
+            <Text style={styles.submitButtonText}>Submit</Text>
                 </TouchableOpacity>
-          </View>
+          </KeyboardAvoidingView>
         );
       }
     }
@@ -204,6 +220,6 @@ export default class TransactionScreen extends React.Component {
         textAlign: 'center', 
         fontSize: 20,
         fontWeight:"bold",
-        color: 'white'
+        backgroundColor: 'blue'
     }
   });
